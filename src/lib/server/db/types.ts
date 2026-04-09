@@ -1,17 +1,22 @@
-import * as schema from '$lib/server/db/schema';
+import * as schema from "$lib/server/db/schema";
 import type {
-	BuildQueryResult,
-	DBQueryConfig,
-	ExtractTablesWithRelations,
-	InferSelectModel,
-} from 'drizzle-orm';
+  BuildQueryResult,
+  DBQueryConfig,
+  ExtractTablesWithRelations,
+  InferSelectModel,
+} from "drizzle-orm";
+
+export interface Coords {
+  lat: number;
+  long: number;
+}
 
 export type Plan = InferSelectModel<typeof schema.plans>;
 
 type TSchema = ExtractTablesWithRelations<typeof schema>;
 
 export type DrivingGroupWithPassengersAndDriver = BuildQueryResult<
-	TSchema,
-	TSchema['drivingGroups'],
-	{ with: { passengers: true; driver: true } }
+  TSchema,
+  TSchema["drivingGroups"],
+  { with: { passengers: true; driver: true } }
 >;

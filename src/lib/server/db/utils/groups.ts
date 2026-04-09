@@ -23,9 +23,41 @@ export async function getAllGroupsInPlan<T extends AllowedRelations | undefined 
 	});
 }
 
-export async function createGroup(planId: string, driverId: string, capacity?: number) {
+export async function createGroup(planId: string, driverId: string, capacity?: number, passengerIds: string[] = []) {
 	const newGroup: typeof drivingGroups.$inferInsert = { driverId, capacity, planId };
-	await db.insert(drivingGroups).values(newGroup);
+	const [insertedGroup] = await db.insert(drivingGroups).values(newGroup).returning();
+
+	if (passengerIds.length > 0) {
+		const members = passengerIds.map((personId, index) => ({
+			groupId: insertedGroup.id,
+			personId,
+			pickupOrder: index,
+		}));
+		await db.insert(groupMembers).values(members);
+	}
+}
+
+export async function updateGroupFromIds(
+	planId: string,
+	groupId: string,
+	driverId: string,
+	capacity: number,
+	passengerIds: string[],
+) {
+	await db.update(drivingGroups)
+		.set({ driverId, capacity })
+		.where(and(eq(drivingGroups.planId, planId), eq(drivingGroups.id, groupId)));
+
+	await db.delete(groupMembers).where(eq(groupMembers.groupId, groupId));
+
+	if (passengerIds.length > 0) {
+		const members = passengerIds.map((personId, index) => ({
+			groupId,
+			personId,
+			pickupOrder: index,
+		}));
+		await db.insert(groupMembers).values(members);
+	}
 }
 
 export async function updateGroup(

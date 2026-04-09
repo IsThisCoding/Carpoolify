@@ -1,5 +1,9 @@
 import type { people } from "$lib/server/db/schema";
-import { createGroup, getAllGroupsInPlan } from "$lib/server/db/utils/groups";
+import {
+  createGroup,
+  getAllGroupsInPlan,
+  updateGroupFromIds,
+} from "$lib/server/db/utils/groups";
 import { createPerson, getAllPeople } from "$lib/server/db/utils/people";
 import { error, type Actions, type ServerLoad } from "@sveltejs/kit";
 import type { Action } from "svelte/action";
@@ -27,13 +31,21 @@ export const load: ServerLoad = async ({ locals, params }) => {
 export const actions: Actions = {
   createGroup: async ({ locals, params, request }) => {
     const formData = await request.formData();
-    const driverId = formData.get("driver") as string;
+    const driverId = formData.get("driverId") as string;
     const capacity = formData.get("capacity") as string;
+    const passengerIds = formData.getAll("passengerIds") as string[];
 
-    if (!params.id || driverId) {
+    console.log(`Creating group for ${driverId}`);
+
+    if (!params.id || !driverId) {
       error(403, "error with creating group");
     }
-    createGroup(params.id, driverId, capacity ? parseInt(capacity) : undefined);
+    await createGroup(
+      params.id,
+      driverId,
+      capacity ? parseInt(capacity) : undefined,
+      passengerIds,
+    );
   },
   createPerson: async ({ locals, params, request }) => {
     const formData = await request.formData();
@@ -47,5 +59,23 @@ export const actions: Actions = {
 
     createPerson({ userId, name, address });
   },
-  updateGroup: async ({ locals, params, request }) => {},
+  updateGroup: async ({ locals, params, request }) => {
+    const formData = await request.formData();
+    const groupId = formData.get("groupId") as string;
+    const driverId = formData.get("driverId") as string;
+    const capacity = formData.get("capacity") as string;
+    const passengerIds = formData.getAll("passengerIds") as string[];
+
+    if (!params.id || !groupId || !driverId) {
+      error(403, "error with updating group");
+    }
+
+    await updateGroupFromIds(
+      params.id,
+      groupId,
+      driverId,
+      parseInt(capacity || "4"),
+      passengerIds,
+    );
+  },
 };
